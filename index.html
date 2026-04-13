@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CODM 提示词工坊 | Seedance 2.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-deep: #0a0a0f;
+  --bg-panel: #12121a;
+  --bg-card: #1a1a26;
+  --bg-input: #22222f;
+  --bg-hover: #2a2a3a;
+  --border: #2d2d3d;
+  --border-active: #6366f1;
+  --text-primary: #e8e8f0;
+  --text-secondary: #9898b0;
+  --text-muted: #666680;
+  --accent: #4ade80;
+  --accent-light: #86efac;
+  --accent-glow: rgba(74,222,128,0.15);
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --danger-bg: rgba(239,68,68,0.08);
+  --danger-border: rgba(239,68,68,0.25);
+  --tag-bg: #1e1e2e;
+  --tag-active: var(--accent);
+  --tag-active-bg: rgba(74,222,128,0.12);
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Noto Sans SC', sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* 顶部背景装饰 */
+body::before {
+  content: '';
+  position: fixed;
+  top: -200px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 600px;
+  background: radial-gradient(ellipse, rgba(74,222,128,0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Header */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10,10,15,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.logo {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #166534, #4ade80);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 16px;
+  color: #fff;
+  flex-shrink: 0;
+}
+.header h1 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+.header h1 span {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 13px;
+  margin-left: 8px;
+}
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+.btn-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+.btn-icon:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-active);
+}
+
+/* Main Layout */
+.main {
+  position: relative;
+  z-index: 1;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 32px 48px;
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 24px;
+}
+
+/* Left Panel - Settings */
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Section Card */
+.section {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.section:hover {
+  border-color: rgba(74,222,128,0.2);
+}
+.section-header {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+.section-header h2 {
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-header h2 .icon {
+  font-size: 16px;
+  opacity: 0.7;
+}
+.section-header .badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--accent-glow);
+  color: var(--accent-light);
+  font-weight: 500;
+}
+.section-header .toggle-icon {
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: transform 0.3s;
+}
+.section.collapsed .toggle-icon {
+  transform: rotate(-90deg);
+}
+.section.collapsed .section-body {
+  display: none;
+}
+.section-body {
+  padding: 0 20px 20px;
+}
+
+/* Tag Selector */
+.tag-group {
+  margin-bottom: 14px;
+}
+.tag-group:last-child {
+  margin-bottom: 0;
+}
+.tag-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.tag-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tag {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--tag-bg);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+  white-space: nowrap;
+}
+.tag:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+  background: rgba(74,222,128,0.05);
+}
+.tag.active {
+  border-color: var(--tag-active);
+  background: var(--tag-active-bg);
+  color: var(--accent-light);
+  font-weight: 500;
+}
+.tag .tag-en {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-left: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Textarea Area */
+.creative-area {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.creative-area h2 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.creative-area .hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+.creative-textarea {
+  width: 100%;
+  min-height: 180px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 14px;
+  line-height: 1.8;
+  padding: 14px 16px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.creative-textarea::placeholder {
+  color: var(--text-muted);
+}
+.creative-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.textarea-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+.char-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Timestamp Editor */
+.timestamp-section {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.timestamp-section h2 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.timestamp-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+.timestamp-input {
+  width: 110px;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  outline: none;
+  text-align: center;
+}
+.timestamp-input:focus {
+  border-color: var(--accent);
+}
+.timestamp-desc {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+}
+.timestamp-desc:focus {
+  border-color: var(--accent);
+}
+.timestamp-desc::placeholder {
+  color: var(--text-muted);
+}
+.btn-add-ts {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+.btn-add-ts:hover {
+  border-color: var(--accent);
+  color: var(--accent-light);
+}
+.btn-remove-ts {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(239,68,68,0.1);
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.btn-remove-ts:hover {
+  background: rgba(239,68,68,0.2);
+}
+
+/* Right Panel - Output & Detection */
+.right-panel {
+  position: sticky;
+  top: 80px;
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Output Card */
+.output-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.output-header {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.output-header h2 {
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.output-actions {
+  display: flex;
+  gap: 8px;
+}
+.btn-sm {
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'Noto Sans SC', sans-serif;
+}
+.btn-sm:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 500;
+}
+.btn-primary:hover {
+  background: var(--accent-light);
+  border-color: var(--accent-light);
+}
+.output-body {
+  padding: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+.output-body::-webkit-scrollbar {
+  width: 4px;
+}
+.output-body::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+.prompt-preview {
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', 'Noto Sans SC', monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.prompt-preview .highlight-subject { color: #60a5fa; }
+.prompt-preview .highlight-action { color: #34d399; }
+.prompt-preview .highlight-camera { color: #fbbf24; }
+.prompt-preview .highlight-style { color: #c084fc; }
+.prompt-preview .highlight-negative { color: #f87171; }
+.prompt-preview .highlight-timestamp { color: #fb923c; }
+.prompt-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.prompt-empty .empty-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  opacity: 0.3;
+}
+
+/* Language Toggle */
+.lang-toggle {
+  display: flex;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  border: 1px solid var(--border);
+}
+.lang-btn {
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'Noto Sans SC', sans-serif;
+}
+.lang-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Detection Card */
+.detection-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.detection-header {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.detection-header h2 {
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.status-dot.safe { background: var(--success); box-shadow: 0 0 6px rgba(34,197,94,0.4); }
+.status-dot.warn { background: var(--warning); box-shadow: 0 0 6px rgba(245,158,11,0.4); }
+.status-dot.danger { background: var(--danger); box-shadow: 0 0 6px rgba(239,68,68,0.4); }
+.detection-body {
+  padding: 16px 20px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.detection-body::-webkit-scrollbar {
+  width: 4px;
+}
+.detection-body::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+.detection-empty {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.detection-item {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.detection-item:last-child { margin-bottom: 0; }
+.detection-item.danger-item {
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+}
+.detection-item.warn-item {
+  background: rgba(245,158,11,0.08);
+  border: 1px solid rgba(245,158,11,0.25);
+}
+.detection-item.info-item {
+  background: rgba(74,222,128,0.08);
+  border: 1px solid rgba(74,222,128,0.2);
+}
+.detection-item .d-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+  margin-top: 2px;
+}
+.detection-item .d-content strong {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+.detection-item .d-content .d-detail {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.detection-item .d-content .d-replace {
+  color: var(--success);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+/* Negative Prompt */
+.negative-section {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.negative-section h2 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.negative-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.neg-tag {
+  padding: 5px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(239,68,68,0.2);
+  background: rgba(239,68,68,0.06);
+  color: #f87171;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+.neg-tag.active {
+  border-color: rgba(239,68,68,0.5);
+  background: rgba(239,68,68,0.15);
+  font-weight: 500;
+}
+.neg-tag:hover {
+  border-color: rgba(239,68,68,0.4);
+}
+
+/* Params row */
+.params-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.param-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.param-item label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.param-slider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.param-slider input[type="range"] {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+}
+.param-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid var(--bg-panel);
+  box-shadow: 0 0 4px rgba(74,222,128,0.3);
+}
+.param-slider .param-val {
+  font-size: 12px;
+  color: var(--accent-light);
+  font-family: 'JetBrains Mono', monospace;
+  min-width: 28px;
+  text-align: right;
+}
+.param-select {
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  font-family: 'Noto Sans SC', sans-serif;
+}
+.param-select:focus {
+  border-color: var(--accent);
+}
+
+/* Copy toast */
+.toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--accent);
+  color: #fff;
+  padding: 12px 28px;
+  border-radius: 30px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 8px 32px rgba(74,222,128,0.3);
+  z-index: 999;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: none;
+}
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Custom select for duration */
+.duration-select {
+  display: flex;
+  gap: 6px;
+}
+.dur-btn {
+  padding: 6px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--tag-bg);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'JetBrains Mono', monospace;
+}
+.dur-btn.active {
+  border-color: var(--tag-active);
+  background: var(--tag-active-bg);
+  color: var(--accent-light);
+}
+.dur-btn:hover {
+  border-color: var(--accent);
+}
+
+/* Quick template */
+.template-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.template-btn {
+  padding: 5px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'Noto Sans SC', sans-serif;
+}
+.template-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent-light);
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .main {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+  .right-panel {
+    position: static;
+  }
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.section, .creative-area, .timestamp-section, .negative-section, .output-card, .detection-card {
+  animation: fadeIn 0.4s ease-out both;
+}
+.section:nth-child(2) { animation-delay: 0.05s; }
+.section:nth-child(3) { animation-delay: 0.1s; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo">COD</div>
+    <h1>CODM 提示词工坊 <span>Seedance 2.0 · CG/预告片专用</span></h1>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="resetAll()" title="重置全部">↺</button>
+  </div>
+</header>
+
+<!-- Main -->
+<div class="main">
+  <!-- Left Panel -->
+  <div class="left-panel">
+
+    <!-- 1. 景别 Shot Size -->
+    <div class="section" id="sec-shot">
+      <div class="section-header" onclick="toggleSection('sec-shot')">
+        <h2><span class="icon">🎬</span>景别 Shot Size</h2>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="section-body">
+        <div class="tag-grid" data-group="shot" data-single="true">
+          <div class="tag" data-val="extreme wide shot" data-zh="大远景">大远景 <span class="tag-en">EWS</span></div>
+          <div class="tag" data-val="wide shot" data-zh="远景">远景 <span class="tag-en">WS</span></div>
+          <div class="tag" data-val="full shot" data-zh="全景">全景 <span class="tag-en">FS</span></div>
+          <div class="tag" data-val="medium shot" data-zh="中景">中景 <span class="tag-en">MS</span></div>
+          <div class="tag" data-val="close-up" data-zh="特写">特写 <span class="tag-en">CU</span></div>
+          <div class="tag" data-val="extreme close-up" data-zh="大特写">大特写 <span class="tag-en">ECU</span></div>
+          <div class="tag" data-val="over-the-shoulder shot" data-zh="过肩镜头">过肩 <span class="tag-en">OTS</span></div>
+          <div class="tag" data-val="low angle shot" data-zh="仰拍">仰拍 <span class="tag-en">Low Angle</span></div>
+          <div class="tag" data-val="high angle shot" data-zh="俯拍">俯拍 <span class="tag-en">High Angle</span></div>
+          <div class="tag" data-val="bird's eye view" data-zh="鸟瞰">鸟瞰 <span class="tag-en">Bird's Eye</span></div>
+          <div class="tag" data-val="Dutch angle" data-zh="荷兰角">荷兰角 <span class="tag-en">Dutch</span></div>
+          <div class="tag" data-val="POV shot" data-zh="第一视角/FPS视角">FPS视角 <span class="tag-en">POV</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 镜头运动 Camera Movement -->
+    <div class="section" id="sec-move">
+      <div class="section-header" onclick="toggleSection('sec-move')">
+        <h2><span class="icon">🎥</span>镜头运动 Camera Movement</h2>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="section-body">
+        <div class="tag-grid" data-group="movement" data-single="true">
+          <div class="tag" data-val="static shot, locked camera" data-zh="固定镜头">固定 <span class="tag-en">Static</span></div>
+          <div class="tag" data-val="slow dolly in" data-zh="缓慢推近">缓推 <span class="tag-en">Dolly In</span></div>
+          <div class="tag" data-val="slow dolly out" data-zh="缓慢拉远">缓拉 <span class="tag-en">Dolly Out</span></div>
+          <div class="tag" data-val="tracking shot" data-zh="跟踪镜头">跟踪 <span class="tag-en">Tracking</span></div>
+          <div class="tag" data-val="pan left" data-zh="左摇">左摇 <span class="tag-en">Pan L</span></div>
+          <div class="tag" data-val="pan right" data-zh="右摇">右摇 <span class="tag-en">Pan R</span></div>
+          <div class="tag" data-val="crane up" data-zh="升镜头">升镜头 <span class="tag-en">Crane Up</span></div>
+          <div class="tag" data-val="crane down" data-zh="降镜头">降镜头 <span class="tag-en">Crane Down</span></div>
+          <div class="tag" data-val="handheld, slight shake" data-zh="手持">手持战地感 <span class="tag-en">Handheld</span></div>
+          <div class="tag" data-val="steadicam, smooth gliding" data-zh="斯坦尼康">稳定器 <span class="tag-en">Steadicam</span></div>
+          <div class="tag" data-val="whip pan" data-zh="甩镜头">甩镜头 <span class="tag-en">Whip Pan</span></div>
+          <div class="tag" data-val="aerial drone shot" data-zh="航拍">航拍 <span class="tag-en">Drone</span></div>
+          <div class="tag" data-val="FPV drone shot" data-zh="穿越机">穿越机 <span class="tag-en">FPV</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 焦距/光学 Lens -->
+    <div class="section" id="sec-lens">
+      <div class="section-header" onclick="toggleSection('sec-lens')">
+        <h2><span class="icon">🔭</span>镜头焦距 Lens & Depth</h2>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="section-body">
+        <div class="tag-group">
+          <div class="tag-label">焦距</div>
+          <div class="tag-grid" data-group="lens" data-single="true">
+            <div class="tag" data-val="shot on 24mm wide-angle lens" data-zh="24mm广角">24mm 广角</div>
+            <div class="tag" data-val="shot on 35mm lens" data-zh="35mm标准">35mm 标准</div>
+            <div class="tag" data-val="shot on 50mm lens" data-zh="50mm标准">50mm 标准</div>
+            <div class="tag" data-val="shot on 85mm portrait lens" data-zh="85mm人像">85mm 肖像</div>
+            <div class="tag" data-val="shot on 135mm telephoto lens" data-zh="135mm长焦">135mm 长焦</div>
+            <div class="tag" data-val="shot on anamorphic lens" data-zh="变形宽银幕">变形宽银幕</div>
+          </div>
+        </div>
+        <div class="tag-group">
+          <div class="tag-label">景深 / 虚化</div>
+          <div class="tag-grid" data-group="dof" data-single="true">
+            <div class="tag" data-val="shallow depth of field, f/1.4, bokeh background" data-zh="浅景深虚化">浅景深虚化</div>
+            <div class="tag" data-val="deep depth of field, f/11, everything in focus" data-zh="全景深">全景深清晰</div>
+            <div class="tag" data-val="rack focus" data-zh="拉焦转焦">拉焦转焦</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. 美术风格 Art Style -->
+    <div class="section" id="sec-style">
+      <div class="section-header" onclick="toggleSection('sec-style')">
+        <h2><span class="icon">🎨</span>美术风格 Visual Style</h2>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="section-body">
+        <div class="tag-group">
+          <div class="tag-label">影像风格</div>
+          <div class="tag-grid" data-group="visstyle" data-single="true">
+            <div class="tag" data-val="cinematic, film grain, anamorphic" data-zh="电影质感">电影质感</div>
+            <div class="tag" data-val="photorealistic, hyperrealistic, 8K" data-zh="超写实">超写实</div>
+            <div class="tag" data-val="cinematic trailer style, epic, dramatic" data-zh="预告片风格">预告片风格</div>
+            <div class="tag" data-val="commercial, clean, polished" data-zh="广告级">广告级</div>
+            <div class="tag" data-val="noir style, high contrast, dramatic shadows" data-zh="黑色电影">黑色电影</div>
+          </div>
+        </div>
+        <div class="tag-group">
+          <div class="tag-label">CG / 游戏风格</div>
+          <div class="tag-grid" data-group="artstyle" data-single="true">
+            <div class="tag" data-val="AAA game cinematic, Unreal Engine 5 rendering" data-zh="3A游戏CG">3A游戏CG</div>
+            <div class="tag" data-val="military realism, tactical gear, battlefield" data-zh="军事写实">军事写实</div>
+            <div class="tag" data-val="sci-fi military, futuristic tactical" data-zh="科幻军事">科幻军事</div>
+            <div class="tag" data-val="cyberpunk style, neon, futuristic" data-zh="赛博朋克">赛博朋克</div>
+            <div class="tag" data-val="Japanese anime style, cel shading" data-zh="日式动漫">日式动漫</div>
+            <div class="tag" data-val="comic book style, halftone" data-zh="漫画风格">漫画风格</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. 光影氛围 Lighting -->
+    <div class="section" id="sec-light">
+      <div class="section-header" onclick="toggleSection('sec-light')">
+        <h2><span class="icon">💡</span>光影氛围 Lighting & Mood</h2>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="section-body">
+        <div class="tag-group">
+          <div class="tag-label">光线类型</div>
+          <div class="tag-grid" data-group="lighting" data-single="true">
+            <div class="tag" data-val="golden hour sunlight, warm tones" data-zh="黄金时刻">黄金时刻</div>
+            <div class="tag" data-val="blue hour, twilight, cool tones" data-zh="蓝调时刻">蓝调时刻</div>
+            <div class="tag" data-val="harsh sunlight, high contrast shadows" data-zh="硬光">硬光</div>
+            <div class="tag" data-val="backlit, rim light, silhouette" data-zh="逆光剪影">逆光剪影</div>
+            <div class="tag" data-val="neon lights, colorful ambient glow" data-zh="霓虹灯光">霓虹灯光</div>
+            <div class="tag" data-val="volumetric lighting, god rays" data-zh="体积光/丁达尔">体积光</div>
+            <div class="tag" data-val="moonlight, cool pale illumination" data-zh="月光">月光</div>
+            <div class="tag" data-val="muzzle flash lighting, dynamic explosion light" data-zh="枪火闪光">枪火闪光</div>
+          </div>
+        </div>
+        <div class="tag-group">
+          <div class="tag-label">色调情绪</div>
+          <div class="tag-grid" data-group="mood" data-single="false">
+            <div class="tag" data-val="warm color palette" data-zh="暖色调">暖色调</div>
+            <div class="tag" data-val="cool color palette" data-zh="冷色调">冷色调</div>
+            <div class="tag" data-val="desaturated, muted tones" data-zh="低饱和">低饱和</div>
+            <div class="tag" data-val="teal and orange color grading" data-zh="青橙色调">青橙色调</div>
+            <div class="tag" data-val="dark and moody, dramatic" data-zh="暗调情绪">暗调情绪</div>
+            <div class="tag" data-val="high contrast, gritty, war-torn" data-zh="高对比战损">高对比战损</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. 创作内容 -->
+    <div class="creative-area" id="creative">
+      <h2>✍️ 创作内容 Creative Content</h2>
+      <p class="hint">描述画面中的角色、动作/情节、战术场景。建议遵循：<strong>角色 → 动作 → 场景</strong> 的顺序。<br>注意：避免直接使用"枪""射击""爆炸"等敏感词，用平替词（如"战术装置""能量冲击"等）。</p>
+      <div class="template-bar">
+        <button class="template-btn" onclick="insertTemplate('operator')">🎖️ 干员亮相</button>
+        <button class="template-btn" onclick="insertTemplate('tactical')">⚔️ 战术行动</button>
+        <button class="template-btn" onclick="insertTemplate('skin')">🔫 皮肤展示</button>
+        <button class="template-btn" onclick="insertTemplate('scene')">🏙️ 场景氛围</button>
+        <button class="template-btn" onclick="insertTemplate('vehicle')">🚁 载具展示</button>
+      </div>
+      <textarea class="creative-textarea" id="creativeInput" 
+        placeholder="例：一位身穿黑色战术装甲的精英干员，头戴夜视仪，手持战术设备，站在废墟城市的制高点。他缓缓抬头注视远方，披风在冷风中轻轻飘动。背景是布满弹孔的建筑群和灰暗天空。"
+        oninput="onContentChange()"></textarea>
+      <div class="textarea-footer">
+        <span class="char-count" id="charCount">0 字</span>
+      </div>
+    </div>
+
+    <!-- 7. 时间轴拆分（可选）-->
+    <div class="timestamp-section" id="tsSection">
+      <h2>⏱️ 时间轴拆分 Timeline <span style="font-size:12px;color:var(--text-muted);font-weight:400;">（可选，多镜头叙事）</span></h2>
+      <div id="tsRows"></div>
+      <button class="btn-add-ts" onclick="addTimestamp()">+ 添加时间段</button>
+    </div>
+
+    <!-- 8. 负面提示词 -->
+    <div class="negative-section" id="negSection">
+      <h2>🚫 负面提示词 Negative Prompt</h2>
+      <div class="negative-tags" data-group="negative" data-single="false">
+        <div class="neg-tag active" data-val="low quality">low quality</div>
+        <div class="neg-tag active" data-val="blurry">blurry</div>
+        <div class="neg-tag active" data-val="deformed">deformed</div>
+        <div class="neg-tag active" data-val="mutated hands">mutated hands</div>
+        <div class="neg-tag active" data-val="extra limbs">extra limbs</div>
+        <div class="neg-tag active" data-val="bad anatomy">bad anatomy</div>
+        <div class="neg-tag active" data-val="watermark">watermark</div>
+        <div class="neg-tag active" data-val="text">text</div>
+        <div class="neg-tag active" data-val="logo">logo</div>
+        <div class="neg-tag active" data-val="ugly face">ugly face</div>
+        <div class="neg-tag active" data-val="poorly drawn">poorly drawn</div>
+        <div class="neg-tag active" data-val="jittery motion">jittery motion</div>
+        <div class="neg-tag active" data-val="inconsistent lighting">inconsistent lighting</div>
+        <div class="neg-tag active" data-val="physics error">physics error</div>
+        <div class="neg-tag active" data-val="frame skip">frame skip</div>
+        <div class="neg-tag active" data-val="artifacts">artifacts</div>
+        <div class="neg-tag active" data-val="black bars">black bars</div>
+        <div class="neg-tag" data-val="mosaic">mosaic</div>
+        <div class="neg-tag" data-val="overexposed">overexposed</div>
+        <div class="neg-tag" data-val="underexposed">underexposed</div>
+        <div class="neg-tag" data-val="lens flare">lens flare</div>
+        <div class="neg-tag" data-val="chromatic aberration">chromatic aberration</div>
+      </div>
+    </div>
+
+    <!-- 9. 参数建议 -->
+    <div class="section" id="sec-params">
+      <div class="section-header" onclick="toggleSection('sec-params')">
+        <h2><span class="icon">⚙️</span>参数建议 Parameters</h2>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="section-body">
+        <div class="params-row">
+          <div class="param-item">
+            <label>视频时长</label>
+            <div class="duration-select" id="durationSelect">
+              <button class="dur-btn active" data-val="5">5s</button>
+              <button class="dur-btn" data-val="8">8s</button>
+              <button class="dur-btn" data-val="10">10s</button>
+              <button class="dur-btn" data-val="15">15s</button>
+            </div>
+          </div>
+          <div class="param-item">
+            <label>创意度 Creativity</label>
+            <div class="param-slider">
+              <input type="range" min="0" max="1" step="0.1" value="0.4" id="creativity" oninput="updateParam(this)">
+              <span class="param-val" id="creativityVal">0.4</span>
+            </div>
+          </div>
+          <div class="param-item">
+            <label>运动强度 Motion</label>
+            <div class="param-slider">
+              <input type="range" min="0" max="1" step="0.1" value="0.5" id="motion" oninput="updateParam(this)">
+              <span class="param-val" id="motionVal">0.5</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right Panel -->
+  <div class="right-panel">
+
+    <!-- Language + Output -->
+    <div class="output-card">
+      <div class="output-header">
+        <h2>📋 最终提示词</h2>
+        <div class="output-actions">
+          <div class="lang-toggle">
+            <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
+            <button class="lang-btn" data-lang="zh" onclick="setLang('zh')">中文</button>
+          </div>
+          <button class="btn-sm btn-primary" onclick="copyPrompt()">复制</button>
+        </div>
+      </div>
+      <div class="output-body">
+        <div class="prompt-preview" id="promptPreview">
+          <div class="prompt-empty">
+            <div class="empty-icon">✨</div>
+            选择参数并填写创作内容<br>实时预览最终提示词
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sensitive Detection -->
+    <div class="detection-card">
+      <div class="detection-header">
+        <h2><span class="status-dot safe" id="statusDot"></span> 合规检测</h2>
+        <button class="btn-sm" onclick="runDetection()">重新检测</button>
+      </div>
+      <div class="detection-body" id="detectionBody">
+        <div class="detection-empty">
+          ✅ 填写内容后将自动检测敏感词与合规性
+        </div>
+      </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="section" id="sec-tips" style="animation-delay:0.15s">
+      <div class="section-header" onclick="toggleSection('sec-tips')">
+        <h2><span class="icon">📖</span>写作贴士</h2>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="section-body" style="font-size:12px;color:var(--text-secondary);line-height:1.9;">
+        <p><strong style="color:var(--accent-light)">五要素公式：</strong>角色 → 动作 → 镜头 → 场景/光影 → 风格</p>
+        <p><strong style="color:var(--warning)">CODM 避坑提示：</strong></p>
+        <ul style="padding-left:16px;margin-top:4px;">
+          <li>避免直接写"枪/射击/爆炸/战争"等词，用"战术装置""能量冲击""硝烟弥漫"等平替</li>
+          <li>不要使用 CODM / Call of Duty 等IP名称，用"精英干员""战术小队"替代</li>
+          <li>单镜头只写一个连续动作，避免复杂动作链（如连续跑跳翻滚）</li>
+          <li>不要出现矛盾指令（如"固定镜头 + 手持抖动"）</li>
+          <li>优先使用英文提示词，效果更稳定</li>
+          <li>角色皮肤描述用物理特征，不要用游戏内皮肤名称</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">✅ 已复制到剪贴板</div>
+
+<script>
+// ===== State =====
+const state = {
+  lang: 'en', // 'en' | 'zh'
+  selections: {}, // group -> value
+  creative: '',
+  timestamps: [],
+  negatives: [],
+  duration: '5',
+  creativity: 0.4,
+  motion: 0.5
+};
+
+// ===== 敏感词库 =====
+const SENSITIVE_RULES = {
+  // 硬性红线
+  hardBan: {
+    label: '🔴 硬性红线',
+    level: 'danger',
+    words: [
+      // 涉黄
+      '裸体','裸露','色情','性感','情色','诱惑','挑逗','暴露','内衣秀','比基尼',
+      'naked','nude','sexy','erotic','seductive','lingerie','pornographic','nsfw',
+      'revealing','provocative','topless','strip','adult content',
+      // 暴力血腥
+      '血腥','暴力','残忍','杀戮','屠杀','肢解','虐待','鲜血','血液','伤口',
+      '枪击','爆炸','战争','武器','刀刃','砍杀','自残','自杀',
+      'blood','gore','violence','brutal','massacre','torture','weapon','gun',
+      'kill','murder','slaughter','dismember','stab','shoot','bomb','grenade',
+      'self-harm','suicide',
+      // 惊悚恐怖
+      '恐怖','惊悚','僵尸','丧尸','鬼魂','骷髅','诅咒','邪恶','恶魔',
+      'horror','zombie','ghost','skeleton','curse','demon','evil','creepy',
+      'nightmare','undead','corpse','decayed',
+      // 毒品
+      '毒品','大麻','冰毒','海洛因','可卡因','吸毒',
+      'drug','marijuana','cocaine','heroin','meth',
+      // 儿童相关
+      '儿童','幼儿','未成年','小孩','loli','shota','child','kid','minor','underage','toddler','infant'
+    ]
+  },
+  // 显性IP
+  ipExplicit: {
+    label: '🟠 显性IP角色',
+    level: 'danger',
+    words: [
+      // 动漫/游戏
+      '钢铁侠','蜘蛛侠','蝙蝠侠','超人','绿巨人','金刚狼','美国队长','雷神',
+      '孙悟空','路飞','鸣人','佐助','柯南','哆啦A梦','皮卡丘','马里奥',
+      '草薙京','八神庵','春丽','不知火舞','莉莉丝','初音未来',
+      'Iron Man','Spider-Man','Batman','Superman','Hulk','Wolverine','Captain America',
+      'Thor','Goku','Luffy','Naruto','Pikachu','Mario','Link','Zelda',
+      'Elsa','Anna','Buzz Lightyear','Woody','Mickey Mouse','Donald Duck',
+      'Harry Potter','Hermione','Gandalf','Frodo','Darth Vader','Yoda',
+      // 真人IP
+      '迪丽热巴','杨幂','赵丽颖','刘亦菲','鹿晗','肖战','王一博',
+      'Taylor Swift','Elon Musk','BTS','Blackpink',
+      // 品牌标识
+      'Nike','Adidas','Louis Vuitton','Gucci','Chanel','Apple logo','Google logo',
+      'Coca-Cola','McDonald','Starbucks','Disney'
+    ]
+  },
+  // 隐性IP（容易误触的影视作品名）
+  ipHidden: {
+    label: '🟡 隐性IP词汇',
+    level: 'warn',
+    words: [
+      '奇幻森林','冰雪奇缘','疯狂动物城','功夫熊猫','花木兰','阿拉丁','美女与野兽',
+      '狮子王','海底总动员','头脑特工队','超能陆战队','寻梦环游记','飞屋环游记',
+      '怪物史莱克','千与千寻','龙猫','天空之城','哈尔的移动城堡','攻壳机动队',
+      '魔戒','指环王','霍比特人','星球大战','黑客帝国','变形金刚','侏罗纪公园',
+      '复仇者联盟','银河护卫队','奇异博士',
+      'Frozen','Zootopia','Kung Fu Panda','Mulan','Lion King','Finding Nemo',
+      'Inside Out','Coco','Spirited Away','Totoro','Lord of the Rings',
+      'Star Wars','Matrix','Transformers','Jurassic Park','Avengers',
+      'Guardians of the Galaxy','Toy Story'
+    ],
+    suggest: '建议拆解为纯物理场景描述，避免直接使用影视作品名'
+  },
+  // 生理不适
+  discomfort: {
+    label: '🟡 可能引起不适',
+    level: 'warn',
+    words: [
+      '虫子','蟑螂','蜈蚣','蛆','蛇','蝎子','蜘蛛','老鼠',
+      '呕吐','腐烂','脓','疮','溃烂','排泄','粪便',
+      'insect','cockroach','centipede','maggot','snake','scorpion','spider','rat',
+      'vomit','rotten','pus','decay','excrement','feces'
+    ],
+    replacements: {
+      '虫子': '发光生物 luminescent creature',
+      '蟑螂': '甲壳发光生物',
+      '蜈蚣': '多足发光节肢生物',
+      '蛇': '流线型鳞片生物 serpentine creature',
+      '蝎子': '带尾甲壳生物',
+      '蜘蛛': '丝线编织生物',
+      '老鼠': '小型毛绒生物',
+      'insect': 'luminescent creature',
+      'cockroach': 'shelled bioluminescent creature',
+      'snake': 'serpentine scaled creature',
+      'spider': 'silk-weaving creature',
+      'rat': 'small furry creature'
+    }
+  },
+  // 结构问题
+  structure: {
+    label: '💡 结构建议',
+    level: 'info',
+    checks: [
+      { test: (t) => (t.match(/，|,/g) || []).length > 8, msg: '句子过长，建议拆分为更短的描述段' },
+      { test: (t) => /同时.*同时|一边.*一边.*一边/.test(t), msg: '动作过多，建议单镜头只写一个连续动作' },
+      { test: (t) => /(固定|static).*(手持|handheld)|(手持|handheld).*(固定|static)/i.test(t), msg: '检测到矛盾指令：固定镜头与手持不能同时使用' },
+      { test: (t) => /(明亮|bright).*(黑暗|dark|noir)|(黑暗|dark|noir).*(明亮|bright)/i.test(t), msg: '检测到矛盾风格：明亮与暗调不能同时使用' },
+      { test: (t) => t.length > 500, msg: '提示词较长（>500字），建议精简以提高生成稳定性' }
+    ]
+  }
+};
+
+// ===== Init =====
+document.addEventListener('DOMContentLoaded', () => {
+  initTags();
+  initNegTags();
+  initDuration();
+  collectNegatives();
+  updatePrompt();
+});
+
+// ===== Tag Selection =====
+function initTags() {
+  document.querySelectorAll('.tag-grid .tag').forEach(tag => {
+    tag.addEventListener('click', () => {
+      const grid = tag.closest('.tag-grid');
+      const group = grid.dataset.group;
+      const single = grid.dataset.single === 'true';
+      if (single) {
+        grid.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
+        if (state.selections[group] === tag.dataset.val) {
+          delete state.selections[group];
+          tag.classList.remove('active');
+        } else {
+          state.selections[group] = tag.dataset.val;
+          tag.classList.add('active');
+        }
+      } else {
+        tag.classList.toggle('active');
+        // collect all active
+        const vals = [];
+        grid.querySelectorAll('.tag.active').forEach(t => vals.push(t.dataset.val));
+        state.selections[group] = vals.join(', ');
+        if (!vals.length) delete state.selections[group];
+      }
+      updatePrompt();
+    });
+  });
+}
+
+function initNegTags() {
+  document.querySelectorAll('.neg-tag').forEach(tag => {
+    tag.addEventListener('click', () => {
+      tag.classList.toggle('active');
+      collectNegatives();
+      updatePrompt();
+    });
+  });
+}
+
+function collectNegatives() {
+  const negs = [];
+  document.querySelectorAll('.neg-tag.active').forEach(t => negs.push(t.dataset.val));
+  state.negatives = negs;
+}
+
+function initDuration() {
+  document.querySelectorAll('#durationSelect .dur-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#durationSelect .dur-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.duration = btn.dataset.val;
+    });
+  });
+}
+
+// ===== Section Toggle =====
+function toggleSection(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
+
+// ===== Content Change =====
+function onContentChange() {
+  const v = document.getElementById('creativeInput').value;
+  state.creative = v;
+  document.getElementById('charCount').textContent = v.length + ' 字';
+  updatePrompt();
+  debounceDetection();
+}
+
+// ===== Timestamp =====
+let tsCounter = 0;
+function addTimestamp() {
+  tsCounter++;
+  const idx = state.timestamps.length;
+  const startSec = idx * 5;
+  const endSec = startSec + 5;
+  state.timestamps.push({ start: `${String(startSec).padStart(2,'0')}s`, end: `${String(endSec).padStart(2,'0')}s`, desc: '' });
+  renderTimestamps();
+}
+
+function removeTimestamp(i) {
+  state.timestamps.splice(i, 1);
+  renderTimestamps();
+  updatePrompt();
+}
+
+function renderTimestamps() {
+  const container = document.getElementById('tsRows');
+  container.innerHTML = '';
+  state.timestamps.forEach((ts, i) => {
+    const row = document.createElement('div');
+    row.className = 'timestamp-row';
+    row.innerHTML = `
+      <input class="timestamp-input" value="${ts.start}" placeholder="00s" onchange="updateTs(${i},'start',this.value)">
+      <span style="color:var(--text-muted)">→</span>
+      <input class="timestamp-input" value="${ts.end}" placeholder="05s" onchange="updateTs(${i},'end',this.value)">
+      <input class="timestamp-desc" value="${ts.desc}" placeholder="这段时间内的动作/画面描述..." oninput="updateTs(${i},'desc',this.value)">
+      <button class="btn-remove-ts" onclick="removeTimestamp(${i})">✕</button>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function updateTs(i, key, val) {
+  state.timestamps[i][key] = val;
+  updatePrompt();
+}
+
+// ===== Params =====
+function updateParam(el) {
+  const id = el.id;
+  const val = parseFloat(el.value);
+  document.getElementById(id + 'Val').textContent = val.toFixed(1);
+  state[id] = val;
+}
+
+// ===== Language =====
+function setLang(lang) {
+  state.lang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+  updatePrompt();
+}
+
+// ===== Templates =====
+const TEMPLATES = {
+  operator: 'An elite tactical operator in full black combat armor with night-vision goggles raised on his helmet, standing on a rooftop overlooking a war-torn city at dusk. He slowly turns to face the camera, his tactical cape flowing in the cold wind. Scars on his armor tell stories of past missions. Background: crumbling buildings, dust particles in the air, distant flares illuminating the grey sky.',
+  tactical: 'A squad of three operators in tactical formation moves through a dark corridor of an abandoned facility. The point man signals with a gloved hand, flashlight beams cutting through the dusty air. They advance methodically, shadows stretching across concrete walls. Emergency red lights flicker overhead.',
+  skin: 'A legendary operator skin reveal. The character stands in a dramatic pose, rotating slowly on a dark metallic platform. Intricate gold and crimson armor details catch the light. Holographic energy effects shimmer across the surface of the tactical suit. Particles and light rays emanate from the character.',
+  scene: 'A vast battlefield at golden hour. Destroyed vehicles and scattered tactical equipment across a desert terrain. Smoke columns rise in the distance. The camera slowly pans across the desolate landscape, revealing the scale of the environment. Wind carries dust and debris through shafts of warm sunlight.',
+  vehicle: 'A military helicopter emerges from behind a mountain ridge at dawn, rotors spinning powerfully, creating dust vortexes below. The sleek dark fuselage reflects the first rays of sunlight. It banks sharply revealing its full silhouette against the orange sky, then accelerates forward with purpose.'
+};
+const TEMPLATES_ZH = {
+  operator: '一位身穿全黑战术装甲的精英干员，头盔上翻起的夜视仪，站在俯瞰残破城市的楼顶。他缓缓转身面向镜头，战术披风在冷风中飘动。装甲上的划痕诉说着过往任务的故事。背景：崩塌的建筑群，空气中漂浮着尘埃颗粒，远处的照明弹照亮灰暗天空。',
+  tactical: '三名干员以战术队形穿过废弃设施的黑暗走廊。尖兵用戴着手套的手做出信号，手电光柱穿透弥漫灰尘的空气。他们有条不紊地推进，影子在混凝土墙壁上延伸。头顶红色应急灯闪烁不定。',
+  skin: '一个传说级干员皮肤展示。角色以帅气姿势站在深色金属平台上缓慢旋转。精致的金色与深红色装甲细节在灯光下闪耀。全息能量特效在战术服表面流动。粒子和光线从角色身上散发出来。',
+  scene: '黄金时刻下的广袤战场。破损载具和散落的战术设备遍布沙漠地形。远处烟柱升起。镜头缓缓平移扫过荒凉的景观，展现环境的宏大规模。风卷着尘土和碎片穿过温暖的阳光柱。',
+  vehicle: '一架军用直升机从黎明时分的山脊后方出现，旋翼强劲旋转，在下方卷起沙尘旋涡。流线型的深色机身反射着第一缕阳光。它急转弯露出完整侧影，映衬在橙色天空中，随后加速向前飞去。'
+};
+
+function insertTemplate(key) {
+  const tpl = state.lang === 'zh' ? TEMPLATES_ZH[key] : TEMPLATES[key];
+  document.getElementById('creativeInput').value = tpl;
+  state.creative = tpl;
+  document.getElementById('charCount').textContent = tpl.length + ' 字';
+  updatePrompt();
+  runDetection();
+}
+
+// ===== Build Prompt =====
+function updatePrompt() {
+  const isEn = state.lang === 'en';
+  const parts = [];
+  
+  // Creative content (Subject + Action + Scene)
+  if (state.creative.trim()) {
+    parts.push(state.creative.trim());
+  }
+
+  // Timestamps
+  if (state.timestamps.length > 0) {
+    const tsLines = state.timestamps
+      .filter(ts => ts.desc.trim())
+      .map(ts => `[${ts.start}-${ts.end}] ${ts.desc.trim()}`);
+    if (tsLines.length) parts.push(tsLines.join('\n'));
+  }
+
+  // Camera: shot + movement
+  const cameraParts = [];
+  if (state.selections.shot) cameraParts.push(state.selections.shot);
+  if (state.selections.movement) cameraParts.push(state.selections.movement);
+  if (cameraParts.length) parts.push(cameraParts.join(', '));
+
+  // Lens + DOF
+  const lensParts = [];
+  if (state.selections.lens) lensParts.push(state.selections.lens);
+  if (state.selections.dof) lensParts.push(state.selections.dof);
+  if (lensParts.length) parts.push(lensParts.join(', '));
+
+  // Style
+  const styleParts = [];
+  if (state.selections.visstyle) styleParts.push(state.selections.visstyle);
+  if (state.selections.artstyle) styleParts.push(state.selections.artstyle);
+  if (styleParts.length) parts.push(styleParts.join(', '));
+
+  // Lighting + Mood
+  const lightParts = [];
+  if (state.selections.lighting) lightParts.push(state.selections.lighting);
+  if (state.selections.mood) lightParts.push(state.selections.mood);
+  if (lightParts.length) parts.push(lightParts.join(', '));
+
+  // Quality boosters
+  parts.push('high quality, physically accurate, character consistency');
+
+  // Negative
+  if (state.negatives.length) {
+    parts.push('\n\nNegative prompt: ' + state.negatives.join(', '));
+  }
+
+  const preview = document.getElementById('promptPreview');
+  if (!state.creative.trim() && !Object.keys(state.selections).length) {
+    preview.innerHTML = `<div class="prompt-empty"><div class="empty-icon">✨</div>选择参数并填写创作内容<br>实时预览最终提示词</div>`;
+    return;
+  }
+
+  // Highlight
+  let html = parts.join('. \n\n');
+  // color code sections
+  if (state.creative.trim()) {
+    html = html.replace(state.creative.trim(), `<span class="highlight-action">${state.creative.trim()}</span>`);
+  }
+  // highlight camera terms
+  const camTerms = [...cameraParts, ...lensParts].filter(Boolean);
+  camTerms.forEach(term => {
+    html = html.replace(term, `<span class="highlight-camera">${term}</span>`);
+  });
+  // highlight style terms
+  const styleTerms = [...styleParts, ...lightParts].filter(Boolean);
+  styleTerms.forEach(term => {
+    html = html.replace(term, `<span class="highlight-style">${term}</span>`);
+  });
+  // highlight negative
+  html = html.replace(/Negative prompt:.*$/s, match => `<span class="highlight-negative">${match}</span>`);
+  // highlight timestamps
+  html = html.replace(/\[\d+s-\d+s\]/g, match => `<span class="highlight-timestamp">${match}</span>`);
+
+  preview.innerHTML = html;
+}
+
+// ===== Copy =====
+function copyPrompt() {
+  const el = document.getElementById('promptPreview');
+  const text = el.innerText || el.textContent;
+  if (!text.trim() || text.includes('选择参数并填写')) {
+    showToast('⚠️ 请先填写创作内容');
+    return;
+  }
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('✅ 已复制到剪贴板');
+  }).catch(() => {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('✅ 已复制到剪贴板');
+  });
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+// ===== Detection =====
+let detectionTimer = null;
+function debounceDetection() {
+  clearTimeout(detectionTimer);
+  detectionTimer = setTimeout(runDetection, 500);
+}
+
+function runDetection() {
+  const text = state.creative + ' ' + state.timestamps.map(t => t.desc).join(' ');
+  const fullPrompt = document.getElementById('promptPreview').innerText || '';
+  const combined = text + ' ' + fullPrompt;
+  
+  const issues = [];
+  const dot = document.getElementById('statusDot');
+  const body = document.getElementById('detectionBody');
+
+  if (!combined.trim() || combined.includes('选择参数并填写')) {
+    body.innerHTML = '<div class="detection-empty">✅ 填写内容后将自动检测敏感词与合规性</div>';
+    dot.className = 'status-dot safe';
+    return;
+  }
+
+  // Check hard ban
+  SENSITIVE_RULES.hardBan.words.forEach(word => {
+    if (combined.toLowerCase().includes(word.toLowerCase())) {
+      issues.push({
+        level: 'danger',
+        icon: '🚫',
+        label: SENSITIVE_RULES.hardBan.label,
+        word,
+        detail: `检测到硬性违禁词「${word}」，将导致生成失败或内容违规`,
+        replace: '建议删除或完全替换该表述'
+      });
+    }
+  });
+
+  // Check explicit IP
+  SENSITIVE_RULES.ipExplicit.words.forEach(word => {
+    if (combined.toLowerCase().includes(word.toLowerCase())) {
+      issues.push({
+        level: 'danger',
+        icon: '⚠️',
+        label: SENSITIVE_RULES.ipExplicit.label,
+        word,
+        detail: `检测到受版权保护的IP角色/品牌「${word}」`,
+        replace: '建议替换为无版权的外貌/特征描述'
+      });
+    }
+  });
+
+  // Check hidden IP
+  SENSITIVE_RULES.ipHidden.words.forEach(word => {
+    if (combined.toLowerCase().includes(word.toLowerCase())) {
+      issues.push({
+        level: 'warn',
+        icon: '⚡',
+        label: SENSITIVE_RULES.ipHidden.label,
+        word,
+        detail: `「${word}」为影视作品名称，可能触发IP风控`,
+        replace: SENSITIVE_RULES.ipHidden.suggest
+      });
+    }
+  });
+
+  // Check discomfort
+  SENSITIVE_RULES.discomfort.words.forEach(word => {
+    if (combined.toLowerCase().includes(word.toLowerCase())) {
+      const rep = SENSITIVE_RULES.discomfort.replacements[word] || '用唯美/科幻化表达替代';
+      issues.push({
+        level: 'warn',
+        icon: '😣',
+        label: SENSITIVE_RULES.discomfort.label,
+        word,
+        detail: `「${word}」可能引起不适或被平台过滤`,
+        replace: `建议替换为：${rep}`
+      });
+    }
+  });
+
+  // Structure checks
+  SENSITIVE_RULES.structure.checks.forEach(check => {
+    if (check.test(combined)) {
+      issues.push({
+        level: 'info',
+        icon: '💡',
+        label: SENSITIVE_RULES.structure.label,
+        word: '',
+        detail: check.msg,
+        replace: ''
+      });
+    }
+  });
+
+  // Render
+  if (issues.length === 0) {
+    body.innerHTML = '<div class="detection-empty">✅ 未检测到敏感词或结构问题，合规通过！</div>';
+    dot.className = 'status-dot safe';
+  } else {
+    const hasDanger = issues.some(i => i.level === 'danger');
+    const hasWarn = issues.some(i => i.level === 'warn');
+    dot.className = 'status-dot ' + (hasDanger ? 'danger' : hasWarn ? 'warn' : 'safe');
+    
+    body.innerHTML = issues.map(issue => `
+      <div class="detection-item ${issue.level}-item">
+        <span class="d-icon">${issue.icon}</span>
+        <div class="d-content">
+          <strong>${issue.label}${issue.word ? ` — "${issue.word}"` : ''}</strong>
+          <div class="d-detail">${issue.detail}</div>
+          ${issue.replace ? `<div class="d-replace">→ ${issue.replace}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+// ===== Reset =====
+function resetAll() {
+  state.selections = {};
+  state.creative = '';
+  state.timestamps = [];
+  state.negatives = [];
+  document.querySelectorAll('.tag.active').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.neg-tag').forEach(t => {
+    // re-activate defaults
+    t.classList.remove('active');
+  });
+  // re-activate default neg tags
+  document.querySelectorAll('.neg-tag').forEach((t, i) => {
+    if (i < 17) t.classList.add('active');
+  });
+  collectNegatives();
+  document.getElementById('creativeInput').value = '';
+  document.getElementById('charCount').textContent = '0 字';
+  document.getElementById('tsRows').innerHTML = '';
+  document.getElementById('creativity').value = 0.4;
+  document.getElementById('creativityVal').textContent = '0.4';
+  document.getElementById('motion').value = 0.5;
+  document.getElementById('motionVal').textContent = '0.5';
+  document.querySelectorAll('#durationSelect .dur-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+  updatePrompt();
+  runDetection();
+}
+
+</script>
+</body>
+</html>
