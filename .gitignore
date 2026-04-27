@@ -1,0 +1,19 @@
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# CodeBuddy
+.codebuddy/
+
+# Dependencies (if added later)
+node_modules/
+
+# Build output (if added later)
+dist/
