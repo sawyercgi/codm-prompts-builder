@@ -4979,6 +4979,12 @@ const CAT_ICONS = {
 /* ── Fandom Wiki Image Loader ── */
 const WIKI_IMG_CACHE = {};
 const FANDOM_API = 'https://callofduty.fandom.com/api.php';
+// ⚠️ 跨域关键：'origin=*' 是 MediaWiki 匿名 CORS 模式，但浏览器实际送出的 Origin header
+// 必须和 query 里的 origin 一致，否则 Fandom 返回 "'origin' parameter does not match Origin header"
+// 因此不能写死 *，要动态用当前页面的 origin（本地 file:// 时回退到 *）
+const ORIGIN_PARAM = (typeof window !== 'undefined' && window.location && window.location.origin && window.location.origin.startsWith('http'))
+  ? window.location.origin
+  : '*';
 
 async function fetchWikiImagesBatch(wikiKeys, useRedirects) {
   const batches = [];
@@ -4988,7 +4994,9 @@ async function fetchWikiImagesBatch(wikiKeys, useRedirects) {
   await Promise.all(batches.map(async (batch) => {
     const titles = batch.join('|');
     try {
-      let url = `${FANDOM_API}?action=query&titles=${encodeURIComponent(titles)}&prop=pageimages&piprop=thumbnail&pithumbsize=400&format=json&origin=*`;
+      // piprop=original|thumbnail 双拿：thumbnail 走 thumblr CDN（小图，但偶发 404）
+      // original 是 wiki 上传的原图，永远 200 但可能很大；我们优先用 thumbnail，failed 时 onerror 切到 original
+      let url = `${FANDOM_API}?action=query&titles=${encodeURIComponent(titles)}&prop=pageimages&piprop=thumbnail%7Coriginal&pithumbsize=400&format=json&origin=${encodeURIComponent(ORIGIN_PARAM)}`;
       if (useRedirects) url += '&redirects=1';
       const res = await fetch(url);
       const data = await res.json();
@@ -5001,14 +5009,23 @@ async function fetchWikiImagesBatch(wikiKeys, useRedirects) {
       (data.query.redirects || []).forEach(r => { redirMap[r.to] = r.from; });
 
       Object.values(data.query.pages).forEach(page => {
-        if (page.missing !== undefined || !page.thumbnail) return;
-        const imgUrl = page.thumbnail.source;
+        if (page.missing !== undefined) return;
+        // 优先 thumbnail（小、快），fallback original（大、稳）
+        const imgUrl = page.thumbnail?.source || page.original?.source;
+        if (!imgUrl) return;
+        const fallbackUrl = page.original?.source;
         // Trace back: final title -> redirect source -> normalized source -> original key
         let title = page.title;
         const redirFrom = redirMap[title] || title;
         const normFrom = normMap[redirFrom] || redirFrom;
         const wikiKey = normFrom.replace(/ /g, '_');
-        if (!WIKI_IMG_CACHE[wikiKey]) WIKI_IMG_CACHE[wikiKey] = imgUrl;
+        if (!WIKI_IMG_CACHE[wikiKey]) {
+          // 缓存对象：{primary, fallback} 两层 URL
+          WIKI_IMG_CACHE[wikiKey] = {
+            primary: imgUrl,
+            fallback: (fallbackUrl && fallbackUrl !== imgUrl) ? fallbackUrl : null
+          };
+        }
       });
     } catch (e) { /* silent */ }
   }));
@@ -5043,14 +5060,18 @@ async function fetchWikiImages(wikiKeys) {
       try {
         const searchTerm = key.replace(/_/g, ' ').replace(/\(.*?\)/g, '').trim();
         if (!searchTerm) return;
-        const url = `${FANDOM_API}?action=query&generator=search&gsrsearch=${encodeURIComponent(searchTerm)}&gsrlimit=1&prop=pageimages&piprop=thumbnail&pithumbsize=400&format=json&origin=*`;
+        const url = `${FANDOM_API}?action=query&generator=search&gsrsearch=${encodeURIComponent(searchTerm)}&gsrlimit=1&prop=pageimages&piprop=thumbnail%7Coriginal&pithumbsize=400&format=json&origin=${encodeURIComponent(ORIGIN_PARAM)}`;
         const res = await fetch(url);
         const data = await res.json();
         const pages = data.query?.pages;
         if (!pages) return;
         const firstPage = Object.values(pages)[0];
-        if (firstPage?.thumbnail?.source) {
-          WIKI_IMG_CACHE[key] = firstPage.thumbnail.source;
+        const imgUrl = firstPage?.thumbnail?.source || firstPage?.original?.source;
+        if (imgUrl) {
+          WIKI_IMG_CACHE[key] = {
+            primary: imgUrl,
+            fallback: (firstPage.original?.source && firstPage.original.source !== imgUrl) ? firstPage.original.source : null
+          };
         }
       } catch (e) { /* silent */ }
     }));
@@ -5060,25 +5081,39 @@ async function fetchWikiImages(wikiKeys) {
 function applyWikiImages() {
   document.querySelectorAll('.wiki-card-thumb[data-wiki]').forEach(thumb => {
     const key = thumb.dataset.wiki;
-    const imgUrl = WIKI_IMG_CACHE[key];
-    if (!imgUrl) return;
+    const cacheEntry = WIKI_IMG_CACHE[key];
+    if (!cacheEntry) return;
+    // 兼容旧格式（直接 string）和新格式（{primary, fallback}）
+    const primary = typeof cacheEntry === 'string' ? cacheEntry : cacheEntry.primary;
+    const fallback = typeof cacheEntry === 'object' ? cacheEntry.fallback : null;
+    if (!primary) return;
     const img = thumb.querySelector('img');
     if (!img) return;
+
+    const markLoaded = () => {
+      img.classList.add('loaded');
+      thumb.classList.add('has-img');
+    };
+
     // ⚠️ 关键修复：onload / onerror 必须在 src 之前绑定
     // 否则浏览器缓存命中时会在 src= 那一行同步触发 load，事件被错过 → 图永远 opacity:0
-    img.onload = () => {
-      img.classList.add('loaded');
-      thumb.classList.add('has-img');
-    };
+    img.onload = markLoaded;
     img.onerror = () => {
-      // CDN 偶发 404 / 网络失败 → 移除 src，保留 fallback emoji 不消失
-      img.removeAttribute('src');
+      // 第一次失败 → 尝试 fallback（原图 URL，永远 200 但更大）
+      if (fallback && img.src !== fallback) {
+        img.onerror = () => {
+          // 第二次还失败 → 移除 src，保留 emoji fallback
+          img.removeAttribute('src');
+        };
+        img.src = fallback;
+      } else {
+        img.removeAttribute('src');
+      }
     };
-    img.src = imgUrl;
-    // 兜底：如果浏览器走缓存且 onload 没触发（罕见但存在），手动检查 complete 状态
+    img.src = primary;
+    // 兜底：缓存命中时 onload 可能已错过，主动检查 complete 状态
     if (img.complete && img.naturalWidth > 0) {
-      img.classList.add('loaded');
-      thumb.classList.add('has-img');
+      markLoaded();
     }
   });
 }
@@ -5202,7 +5237,7 @@ function renderWikiContent() {
             <a class="wiki-card" href="${W}${item.w}" target="_blank" rel="noopener" title="${item.n} — 点击查看 Wiki">
               <div class="wiki-card-thumb${isMap ? ' map-thumb' : ''}" data-wiki="${item.w}">
                 <span class="thumb-fallback">${icon}</span>
-                <img alt="${item.n}">
+                <img alt="${item.n}" referrerpolicy="no-referrer">
               </div>
               <div class="wiki-card-body">
                 <div class="wiki-card-name">${item.n}</div>
