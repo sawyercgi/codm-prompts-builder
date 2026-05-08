@@ -4838,7 +4838,7 @@ const IMG = 'https://static.wikia.nocookie.net/callofduty/images/';
 const CODM_DB = {
   // ====== WEAPONS by game category ======
   'Assault Rifles 突击步枪': [
-    { n:'M4', w:'M4_(weapon)' },{ n:'AK-47', w:'AK-47' },{ n:'AK117', w:'AK117' },
+    { n:'M4', w:'M4A1' },{ n:'AK-47', w:'AK-47' },{ n:'AK117', w:'AK117' },
     { n:'Type 25', w:'Type_25' },{ n:'ASM10', w:'ASM10' },{ n:'Man-O-War', w:'Man-O-War' },
     { n:'HBRa3', w:'HBRa3' },{ n:'ICR-1', w:'ICR-1' },{ n:'LK24', w:'LK24' },
     { n:'BK57', w:'BK57' },{ n:'KN-44', w:'KN-44' },{ n:'HVK-30', w:'HVK-30' },
@@ -5018,10 +5018,10 @@ async function fetchWikiImages(wikiKeys) {
   // Round 1: with redirects (CODM aliases → real weapon pages with images)
   await fetchWikiImagesBatch(wikiKeys, true);
 
-  // Round 2: for items still missing, try searching by name (without underscores)
+  // Round 2: 对仍 missing 的 key，去掉 (xxx) 后缀重试
+  // 例如：M4_(weapon) → M4 / Knife_(weapon) → Knife
   const missing = wikiKeys.filter(k => !WIKI_IMG_CACHE[k]);
   if (missing.length > 0) {
-    // Some keys may have (xxx) suffixes that don't exist; try bare names
     const altKeys = missing.map(k => k.replace(/_\(.*\)$/, ''));
     const unique = [...new Set(altKeys)].filter(k => !WIKI_IMG_CACHE[k]);
     if (unique.length > 0) {
@@ -5034,6 +5034,27 @@ async function fetchWikiImages(wikiKeys) {
       });
     }
   }
+
+  // Round 3: 仍 missing 的尝试 prefix search（最后兜底，找最接近的页面）
+  // 限 30 个以内避免过多请求；针对 BR 职业等"有页面但需搜索"的边缘 key
+  const stillMissing = wikiKeys.filter(k => !WIKI_IMG_CACHE[k]);
+  if (stillMissing.length > 0 && stillMissing.length <= 30) {
+    await Promise.all(stillMissing.map(async (key) => {
+      try {
+        const searchTerm = key.replace(/_/g, ' ').replace(/\(.*?\)/g, '').trim();
+        if (!searchTerm) return;
+        const url = `${FANDOM_API}?action=query&generator=search&gsrsearch=${encodeURIComponent(searchTerm)}&gsrlimit=1&prop=pageimages&piprop=thumbnail&pithumbsize=400&format=json&origin=*`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const pages = data.query?.pages;
+        if (!pages) return;
+        const firstPage = Object.values(pages)[0];
+        if (firstPage?.thumbnail?.source) {
+          WIKI_IMG_CACHE[key] = firstPage.thumbnail.source;
+        }
+      } catch (e) { /* silent */ }
+    }));
+  }
 }
 
 function applyWikiImages() {
@@ -5043,11 +5064,22 @@ function applyWikiImages() {
     if (!imgUrl) return;
     const img = thumb.querySelector('img');
     if (!img) return;
-    img.src = imgUrl;
+    // ⚠️ 关键修复：onload / onerror 必须在 src 之前绑定
+    // 否则浏览器缓存命中时会在 src= 那一行同步触发 load，事件被错过 → 图永远 opacity:0
     img.onload = () => {
       img.classList.add('loaded');
       thumb.classList.add('has-img');
     };
+    img.onerror = () => {
+      // CDN 偶发 404 / 网络失败 → 移除 src，保留 fallback emoji 不消失
+      img.removeAttribute('src');
+    };
+    img.src = imgUrl;
+    // 兜底：如果浏览器走缓存且 onload 没触发（罕见但存在），手动检查 complete 状态
+    if (img.complete && img.naturalWidth > 0) {
+      img.classList.add('loaded');
+      thumb.classList.add('has-img');
+    }
   });
 }
 
@@ -5170,7 +5202,7 @@ function renderWikiContent() {
             <a class="wiki-card" href="${W}${item.w}" target="_blank" rel="noopener" title="${item.n} — 点击查看 Wiki">
               <div class="wiki-card-thumb${isMap ? ' map-thumb' : ''}" data-wiki="${item.w}">
                 <span class="thumb-fallback">${icon}</span>
-                <img alt="${item.n}" loading="lazy">
+                <img alt="${item.n}">
               </div>
               <div class="wiki-card-body">
                 <div class="wiki-card-name">${item.n}</div>
